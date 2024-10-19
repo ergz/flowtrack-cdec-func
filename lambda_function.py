@@ -90,7 +90,7 @@ def lambda_handler(event, context):
         all_df = [pd.DataFrame.from_dict(json.loads(x.content)) for x in resp_all_urls]
         all_data = pd.concat(all_df)
 
-        all_data.rename(
+        all_data = all_data.rename(
             columns={
                 "stationId": "station_id",
                 "durCode": "duration_code",
@@ -98,6 +98,8 @@ def lambda_handler(event, context):
                 "date": "datetime",
             }
         )[["station_id", "duration_code", "datetime", "sensor_number", "value"]]
+
+        print(all_data)
 
         return {"statusCode": 200, "body": all_data.to_json()}
     except Exception as e:
