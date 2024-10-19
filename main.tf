@@ -43,6 +43,8 @@ resource "aws_lambda_function" "flowtrack-aggregator" {
       DB_PORT = 5432    
     }
   }
+
+  timeout = 60
 }
 
 

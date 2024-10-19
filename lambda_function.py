@@ -1,4 +1,5 @@
 import json
+from pandas.core.construction import com
 import requests
 import boto3
 from botocore.exceptions import ClientError
@@ -65,9 +66,9 @@ def lambda_handler(event, context):
         # get the data to create the urls we will want to query
         cursor.execute(
             """
-            select s2.code as station, s.number sensor, duration_code from cdec_queries
-                join sensors s on s.id = cdec_queries.sensor_id
-                join stations s2 on s2.id = cdec_queries.station_id where is_active;
+                select s2.code as station, s.number sensor, duration_code from cdec_queries
+                join public.sensors s on s.id = cdec_queries.sensor_id
+                join public.stations s2 on s2.id = cdec_queries.station_id where s2.code = 'KWK';
             """
         )
 
@@ -98,6 +99,6 @@ def lambda_handler(event, context):
             }
         )[["station_id", "duration_code", "datetime", "sensor_number", "value"]]
 
-        return {"statusCode": 200, "body": all_data}
+        return {"statusCode": 200, "body": all_data.to_json()}
     except Exception as e:
         print(f"Error: {e}")
