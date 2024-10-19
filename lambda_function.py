@@ -99,8 +99,6 @@ def lambda_handler(event, context):
             }
         )[["station_id", "duration_code", "datetime", "sensor_number", "value"]]
 
-        print(all_data)
-
-        return {"statusCode": 200, "body": all_data.to_json()}
+        return {"statusCode": 200, "body": all_data.to_json(orient="records")}
     except Exception as e:
         print(f"Error: {e}")
