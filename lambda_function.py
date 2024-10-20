@@ -90,7 +90,7 @@ def lambda_handler(event, context):
             """
                 select s2.code as station, s.number sensor, duration_code from cdec_queries
                 join public.sensors s on s.id = cdec_queries.sensor_id
-                join public.stations s2 on s2.id = cdec_queries.station_id where s2.code = 'KWK';
+                join public.stations s2 on s2.id = cdec_queries.station_id where is_active = true;
             """
         )
 
