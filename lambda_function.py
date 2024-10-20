@@ -52,7 +52,10 @@ def insert_cdec_records(conn, data):
             (SELECT id from stations where code = %s),
             (SELECT id from sensors where number::integer = %s),
             %s
-        );
+        ) 
+        ON CONFLICT (datetime, station_id, sensor_id) DO UPDATE
+        SET value = EXCLUDED.value,
+        updated_at = NOW();
     """
 
     try:
