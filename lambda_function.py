@@ -4,8 +4,10 @@ import requests
 import boto3
 from botocore.exceptions import ClientError
 import psycopg2
+from psycopg2.extras import execute_batch
 import pandas as pd
 from sqlalchemy import create_engine
+import datetime
 
 
 db_port = 5432
@@ -31,6 +33,44 @@ def get_secret():
 
 def create_cdec_url(location, sensor, duration):
     return f"https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet?Stations={location}&SensorNums={sensor}&dur_code={duration}&Start=2024-08-15"
+
+
+def get_sensors(conn):
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+            SELECT * FROM sensors;            
+        """
+    )
+
+
+def insert_cdec_records(conn, data):
+    statement = """
+        INSERT INTO observations (datetime, station_id, sensor_id, value) 
+        VALUES (
+            %s, 
+            (SELECT id from stations where code = %s),
+            (SELECT id from sensors where number::integer = %s),
+            %s
+        );
+    """
+
+    try:
+        cursor = conn.cursor()
+        insert_data = [
+            (
+                datetime.datetime.strptime(rec["datetime"], "%Y-%m-%d %H:%M"),
+                rec["station_id"],
+                rec["sensor_number"],
+                rec["value"] if rec["value"] > -999 else None,
+            )
+            for rec in data
+        ]
+
+        execute_batch(cursor, statement, insert_data)
+        conn.commit()
+    except Exception as e:
+        print(e)
 
 
 def lambda_handler(event, context):
@@ -77,9 +117,6 @@ def lambda_handler(event, context):
             dict(zip([column[0] for column in cursor.description], row)) for row in rows
         ]
 
-        cursor.close()
-        conn.close()
-
         urls_to_get = []
         for i in data_to_download:
             urls_to_get.append(
@@ -99,6 +136,12 @@ def lambda_handler(event, context):
             }
         )[["station_id", "duration_code", "datetime", "sensor_number", "value"]]
 
-        return {"statusCode": 200, "body": all_data.to_json(orient="records")}
+        records_for_insert = all_data.to_dict(orient="records")
+        insert_cdec_records(conn, records_for_insert)
+
+        cursor.close()
+        conn.close()
+
+        return {"statusCode": 200, "body": "the function worked!"}
     except Exception as e:
         print(f"Error: {e}")
