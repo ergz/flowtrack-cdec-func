@@ -8,6 +8,7 @@ from psycopg2.extras import execute_batch
 import pandas as pd
 from sqlalchemy import create_engine
 import datetime
+from urllib.parse import quote_plus
 
 
 db_port = 5432
@@ -79,7 +80,10 @@ def insert_cdec_records(conn, data):
 def lambda_handler(event, context):
     try:
         db_secret = get_secret()
-        connection_string = f"postgresql://{db_secret['username']}:{db_secret['password']}@{db_host}:{db_port}/flowtrack"
+        encoded_username = quote_plus(db_secret["username"])
+        encoded_password = quote_plus(db_secret["password"])
+
+        connection_string = f"postgresql://{encoded_username}:{encoded_password}@{db_host}:{db_port}/flowtrack"
 
         engine = create_engine(connection_string)
         conn = psycopg2.connect(connection_string)
